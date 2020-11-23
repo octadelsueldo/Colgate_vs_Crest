@@ -1,0 +1,198 @@
+"0","library(here) # Comentarios [//]:"
+"2","here() starts at /Users/octaviodelsueldo/Documents/CUNEF/Prediccion/Colgate_vs_Crest
+"
+"0","library(dplyr)"
+"2","
+Attaching package: ‘dplyr’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+"
+"0","library(janitor) # Limpieza de nombres"
+"2","
+Attaching package: ‘janitor’
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    chisq.test, fisher.test
+
+"
+"0","library(skimr) # Summary lindo"
+"0","library(magrittr) #  %<>%"
+"0","library(corrplot) # Grafico de correlaciones"
+"2","corrplot 0.84 loaded
+"
+"0","library(ggcorrplot)  # Correlaciones con ggplot"
+"2","Loading required package: ggplot2
+"
+"0","library(PerformanceAnalytics) # Otra correlación"
+"2","Loading required package: xts
+"
+"2","Loading required package: zoo
+"
+"2","
+Attaching package: ‘zoo’
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    as.Date, as.Date.numeric
+
+"
+"2","
+Attaching package: ‘xts’
+
+"
+"2","The following objects are masked from ‘package:dplyr’:
+
+    first, last
+
+"
+"2","
+Attaching package: ‘PerformanceAnalytics’
+
+"
+"2","The following object is masked from ‘package:graphics’:
+
+    legend
+
+"
+"0","library(imputeTS) # na_mean() reemplaza nulos por la media"
+"2","Registered S3 method overwritten by 'quantmod':
+  method            from
+  as.zoo.data.frame zoo 
+"
+"2","
+Attaching package: ‘imputeTS’
+
+"
+"2","The following object is masked from ‘package:zoo’:
+
+    na.locf
+
+"
+"0","library(broom) # Modelos en df"
+"0","library(flextable) # Tablas formateadas"
+"2","Registered S3 method overwritten by 'data.table':
+  method           from
+  print.data.table     
+"
+"0","library(mgcv) # Estimaciones GAM"
+"2","Loading required package: nlme
+"
+"2","
+Attaching package: ‘nlme’
+
+"
+"2","The following object is masked from ‘package:dplyr’:
+
+    collapse
+
+"
+"2","This is mgcv 1.8-33. For overview type 'help(""mgcv-package"")'.
+"
+"0","library(reshape2) # Melt DF"
+"0","library(prettydoc)"
+"0","library(ggplot2)"
+"0","library(forecast)"
+"2","
+Attaching package: ‘forecast’
+
+"
+"2","The following object is masked from ‘package:nlme’:
+
+    getResponse
+
+"
+"0","library(zoo)"
+"0",""
+"0","library(TSA)"
+"2","Registered S3 methods overwritten by 'TSA':
+  method       from    
+  fitted.Arima forecast
+  plot.Arima   forecast
+"
+"2","
+Attaching package: ‘TSA’
+
+"
+"2","The following objects are masked from ‘package:PerformanceAnalytics’:
+
+    kurtosis, skewness
+
+"
+"2","The following objects are masked from ‘package:stats’:
+
+    acf, arima
+
+"
+"2","The following object is masked from ‘package:utils’:
+
+    tar
+
+"
+"0","library(openxlsx)"
+"0","library(xts)"
+"0","library(lmtest)"
+"0","library(Hmisc)"
+"2","Loading required package: lattice
+"
+"2","Loading required package: survival
+"
+"2","Loading required package: Formula
+"
+"2","Registered S3 method overwritten by 'htmlwidgets':
+  method           from         
+  print.htmlwidget tools:rstudio
+"
+"2","
+Attaching package: ‘Hmisc’
+
+"
+"2","The following objects are masked from ‘package:dplyr’:
+
+    src, summarize
+
+"
+"2","The following objects are masked from ‘package:base’:
+
+    format.pval, units
+
+"
+"0","library(astsa)"
+"2","
+Attaching package: ‘astsa’
+
+"
+"2","The following object is masked from ‘package:forecast’:
+
+    gas
+
+"
+"0","library(tsoutliers)"
+"0","library(fpp2)"
+"2","[30m── [1mAttaching packages[22m ───────────────────────────────────────────────────────────────────────── fpp2 2.4 ──[39m
+"
+"2","[30m[32m✓[30m [34mfma      [30m 2.4     [32m✓[30m [34mexpsmooth[30m 2.3[39m
+"
+"2","[30m── [1mConflicts[22m ──────────────────────────────────────────────────────────────────────────── fpp2_conflicts ──
+[31mx[30m [34mforecast[30m::[32mgetResponse()[30m masks [34mnlme[30m::getResponse()[39m
+"
+"2","
+Attaching package: ‘fpp2’
+
+"
+"2","The following object is masked from ‘package:astsa’:
+
+    oil
+
+"

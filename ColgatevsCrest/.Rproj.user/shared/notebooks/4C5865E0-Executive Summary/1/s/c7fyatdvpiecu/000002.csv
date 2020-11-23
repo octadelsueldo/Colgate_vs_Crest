@@ -1,0 +1,8 @@
+"0","#Vamos a pasarlo a trimestre para operar mejor"
+"0","xVentasCrest <- to.weekly(xVentasCrest)"
+"0","zVentasCrest <- as.zoo(xVentasCrest$xVentasCrest.Close)"
+"0","xVentasColgate <- to.weekly(xVentasColgate)"
+"0","zVentasColgate <- as.zoo(xVentasColgate$xVentasColgate.Close)"
+"0","names(zVentasCrest) <- 'VentasMercado'"
+"0","names(zVentasColgate) <- 'VentasMercado'"
+"0",""

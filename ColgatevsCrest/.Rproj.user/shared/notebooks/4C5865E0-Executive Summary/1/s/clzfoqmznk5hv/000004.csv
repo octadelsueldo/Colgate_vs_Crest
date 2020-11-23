@@ -1,0 +1,6 @@
+"0",""
+"0","#Boxplot de Colgate"
+"0","ggplot(gData.Colgate) + geom_boxplot(aes(x = is.numeric(fit1.Colgate$residuals), y = fit1.Colgate$residuals),"
+"0","                             outlier.colour=""red"", outlier.shape=16,outlier.size=2)+"
+"0","  xlab("""")+ggtitle(""Boxplot de Colgate"")"
+"0",""

@@ -1,0 +1,4 @@
+"0","#Primera aproximacion"
+"0","autoplot(zVentasCrest) + geom_point() +"
+"0","  ylab(""Ventas"")+ggtitle(""Cuota semanal Crest"")+xlab(""Semanas"") + "
+"0","  ggtitle('Serie Temporal de Ventas Crest')"

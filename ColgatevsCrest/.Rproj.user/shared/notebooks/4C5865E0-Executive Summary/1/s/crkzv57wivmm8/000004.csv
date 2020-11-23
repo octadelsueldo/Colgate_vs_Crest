@@ -1,0 +1,5 @@
+"0",""
+"0",""
+"0","#Forecast de Colgate"
+"0","fventas.colgate = forecast(fit1.Colgate, h = 16)"
+"0","plot(fventas.colgate)"

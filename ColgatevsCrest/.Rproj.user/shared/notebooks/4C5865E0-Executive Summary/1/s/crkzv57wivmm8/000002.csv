@@ -1,0 +1,3 @@
+"0","#Forecast de Crest"
+"0","fventas.crest = forecast(fit1, h=16)"
+"0","plot(fventas.crest)"

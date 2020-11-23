@@ -1,0 +1,453 @@
+---
+title: "Predicción - Colgate vs Crest"
+author: "Hugo César Octavio del Sueldo"
+date: "11/20/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introducción
+
+En general, a los directores de marketing les gustaría conocer la efectividad de sus gastos en publicidad. El análisis de intervención proporciona una herramienta que puede ser útil para evaluar el impacto de las iniciativas que la empresa, los competidores o terceros pueden realizar en el mix de mercado. En esta caso práctico, consideramos la lucha por la cuota de mercado entre la crema dental Colgate de Colgate-Palmolive y la crema dental Crest de Procter y Gamble.
+
+Procter y Gamble introdujeron Crest en el mercado estadounidense en 1956. Antes de ese momento, Colgate disfrutaba de un liderazgo de mercado con una participación de mercado cercana al 50%. Durante los siguientes 4 años, Colgate siguió siendo un competidor dominante y Crest solo logró una participación de mercado relativamente modesta pero estable del 15%. Sin embargo, el 1 de agosto de 1960, el Consejo de Terapéutica Dental de la American Dental Association (ADA) aprobó a Crest como una “ayuda importante en cualquier programa de higiene dental”.
+
+Mientras tanto, Procter y Gamble revitalizaron su campaña de marketing para aprovechar el respaldo de la ADA, lo que dio como resultado un salto casi inmediato en la cuota de mercado de Crest en detrimento de la de Colgate.
+
+En el fichero data.xlsx se encuentran las cuotas del mercado de Colgate y Crest semanales desde 1958 hasta abril de 1963.
+
+El objetivo es predecir las 16 semanas del año 1963, para las dos cuotas de mercado, por lo que se dejará fuera de la muestra este periodo muestral.
+
+El análisis debe incluir para las dos series la estimación de un modelo ARIMA, la detección de atípicos/outlier y un modelo de interveción. Por último se debe realizar un modelo de función de tranferencia entre las dos cuotas.
+
+El resultado debe ser un informe que no supere las 10 páginas. Se entregará un html y los archivos rmd auxiliares. Pensad que el director de marketing solo va a leer el informe.
+
+```{r carga_datos}
+data <- readxl::read_xlsx("data.xlsx")
+head(data)
+tail(data)
+```
+```{r librerias, include=FALSE}
+library(here) # Comentarios [//]:
+library(dplyr)
+library(janitor) # Limpieza de nombres
+library(skimr) # Summary lindo
+library(magrittr) #  %<>%
+library(corrplot) # Grafico de correlaciones
+library(ggcorrplot)  # Correlaciones con ggplot
+library(PerformanceAnalytics) # Otra correlación
+library(imputeTS) # na_mean() reemplaza nulos por la media
+library(broom) # Modelos en df
+library(flextable) # Tablas formateadas
+library(mgcv) # Estimaciones GAM
+library(reshape2) # Melt DF
+library(prettydoc)
+library(ggplot2)
+library(forecast)
+library(zoo)
+
+library(TSA)
+library(openxlsx)
+library(xts)
+library(lmtest)
+library(Hmisc)
+library(astsa)
+library(tsoutliers)
+library(fpp2)
+```
+
+## EDA
+
+Realizaremos ahora un analisis gráfico de las dos empresas para analizar su tendencia y su relación del market share en funcion de las semanas desde 1958 hasta 1963.
+
+```{r}
+skim(data)
+```
+
+
+```{r}
+colgate <- ts(data$Colgate, start = 1958, frequency = 52)
+crest <- ts(data$Crest, start = 1958, frequency = 52)
+```
+
+Creamos un objeto donde esten las dos series incluidas para poder compararlas en un mismo grafico
+
+```{r}
+mydata <- ts(data[,c(3,4)], start = 1958, frequency = 52)
+```
+
+
+Ahora podemos graficar las series de cada una de las empresas por separado y juntas para poder compararlas a lo largo del tiempo:
+
+```{r}
+#library(fpp2)
+
+#Plot de Colgate
+autoplot(colgate) +
+  ggtitle("Colgate Market Shares") +
+  xlab("Week") +
+  ylab("Market Share")
+```
+Colgate experimentó una fuerte bajada a mediados del año 1960 y fue fruto de que el 1 de agosto de 1960, el Consejo de Terapéutica Dental de la American Dental Association (ADA) aprobó a Crest como una "ayuda importante en cualquier programa de higiene dental" y por tanto afectó significativamente a sus ventas. No obstante esto, se puede observar que la tendencia en las ventas de Colgate era decreciente y aparentemente parece no tener un comportamiento estacional.
+
+
+
+
+```{r}
+#Plot de Crest
+autoplot(crest) +
+  ggtitle("Crest Market Shares") +
+  xlab("Week") +
+  ylab("Market Share")
+```
+
+Podemos apreciar claramente una tendencia alcista para la empresa Crest y aumento considerable en la mitad del año 1961 donde sus ventas aumentaron en mayor medida. Los valores de `Crest` aumentan constantemente, sin volver en ningún momento a su estado inicial, eso denota que estamos ante un `escalón` o `step` y no un `impulso` o `pulse`, ya que las medias no vuelven a los valores iniciales. Este escalon producido a mediados de 1960 por la ayuda recibida por parte ADA, consolido la posicion en el mercado de dentifricos de Crest. A su vez, Procter y Gamble revitalizaron su campaña de marketing para aprovechar el respaldo de la ADA, lo que dio como resultado un salto casi inmediato en la cuota de mercado de Crest en detrimento de la de Colgate.
+
+```{r}
+# Plot de las series una abajo de la otra
+autoplot(mydata, facets = TRUE)
+```
+
+
+
+```{r}
+#Plot con las dos series en el mismo grafico
+autoplot(mydata, facets = FALSE) +
+  ggtitle("Cuotas de mercado de Crest y Colgate") +
+  xlab("Tiempo") +
+  ylab("Cuota de mercado")
+```
+
+El grafico de Colgate muestra, como vimos anteriormente, un claro comportamiento decreciente. Comienza con un market share de 0.425 y luego cae fuerte a 0.172 en el final de la serie.
+
+
+El grafico de Crest muestra un claro comportamiento creciente desde el comienzo hasta el final. Comienza con un market share de 0.108 y luego finaliza con un 0.384 alcanzando en el medio valores incluso mayores.
+
+
+
+
+```{r, include=FALSE}
+#Tendremos que trabajar la columna de la fecha y las semanas
+ventasCrest <- data$Crest
+ventasColgate <- data$Colgate
+generateDate <- seq(as.Date('1958/01/08'), as.Date('1963/04/23'), by = 'week')
+xVentasCrest <- xts(ventasCrest, order.by = generateDate)
+xVentasColgate <- xts(ventasColgate, order.by = generateDate)
+
+```
+
+```{r, include=FALSE}
+#Vamos a pasarlo a trimestre para operar mejor
+xVentasCrest <- to.weekly(xVentasCrest)
+zVentasCrest <- as.zoo(xVentasCrest$xVentasCrest.Close)
+xVentasColgate <- to.weekly(xVentasColgate)
+zVentasColgate <- as.zoo(xVentasColgate$xVentasColgate.Close)
+names(zVentasCrest) <- 'VentasMercado'
+names(zVentasColgate) <- 'VentasMercado'
+
+```
+
+
+
+```{r, include=FALSE, echo=FALSE, out.width='70%', out.height='70%'}
+#Primera aproximacion
+autoplot(zVentasCrest) + geom_point() +
+  ylab("Ventas")+ggtitle("Cuota semanal Crest")+xlab("Semanas") + 
+  ggtitle('Serie Temporal de Ventas Crest')
+```
+
+
+```{r include=FALSE, echo=FALSE, out.width='70%', out.height='70%'}
+#Primera aproximacion
+autoplot(zVentasColgate) + geom_point() +
+  ylab("Ventas")+ggtitle("Cuota semanal Crest")+xlab("Semanas") + 
+  ggtitle('Serie Temporal de Ventas Colgate')
+```
+
+
+
+```{r}
+ggtsdisplay(zVentasCrest)
+ggtsdisplay(zVentasColgate)
+```
+
+
+Separamos las muestras de training y test
+```{r}
+set.seed(12345)
+colgate_training <-  window(colgate, start = 1958,end = c(1962, 52))
+crest_training <- window(crest, start = 1958, c(1962, 52))
+colgate_test <- window(colgate, start = 1963)
+crest_test <- window(crest, start = 1963)
+training_data <- data[1:260,]
+```
+
+Otra forma de separar la muestra 
+
+```{r sampling, echo=FALSE,include=FALSE}
+#Select number of observation to compare forecast
+#Quitamos 16 semanas de 1963
+cOmit = 16
+#Data Size
+nObs.Crest = length(zVentasCrest)
+nObs.Colgate = length(zVentasColgate)
+#sub_sample for Crest
+#oVentasCrest=zCuotaCrest[1:(nObs-cOmit),]
+oVentasCrest <- window(zVentasCrest, start = index(zVentasCrest[1]), end = index(zVentasCrest[nObs.Crest - cOmit]))
+
+#out sample (real data to forecast performance)
+pVentasCrest <- window(zVentasCrest,start=index(zVentasCrest[nObs.Crest-cOmit+1]),end=index(zVentasCrest[nObs.Crest]))
+
+#sub_sample for Colgate
+oVentasColgate <- window(zVentasColgate, start = index(zVentasColgate[1]), end = index(zVentasColgate[nObs.Colgate - cOmit]))
+
+#out sample (real data to forecast performance)
+pVentasColgate <- window(zVentasColgate,start=index(zVentasColgate[nObs.Colgate-cOmit+1]),end=index(zVentasColgate[nObs.Colgate]))
+```
+
+## Modelos ARIMA
+Ahora comenzaremos con el modelo ARIMA propiamente dicho, entrenaremos varios modelos autoarima para contrastar los resultados. 
+
+En resumen, un modelo es estacionario cuando es estacionario en media y varianza y cuando su autocorrelación es constante. La varianza, la hacemos estacionaria con el logaritmo, y la media mediante la diferencia y la autocorrelación, que es la correlación de una variable consigo misma si es alta es algo bueno. Eso quiere decir que podemos predecir la variable en función de ella misma.
+
+### ARIMA para Crest
+
+```{r arima_crest}
+#ARIMA MODEL Automatic
+
+fit1 = auto.arima(oVentasCrest) #cuando le ponemos autoarima estima el modelo ruido blanco.
+fit2 = auto.arima(oVentasCrest, lambda = 0) #con transformacion logaritmo neperiano
+fit3 = auto.arima(oVentasCrest, lambda = 0, approximation = F, stepwise = F)
+fit4 = auto.arima(oVentasCrest, ic = 'aic', trace = T)
+summary(fit1, fit2, fit3, fit4)
+```
+
+En el modelo ARIMA, desde el punto de vista estocástico o moderno, tenemos tres parámetros de los que nos tenemos que preocupar, los cuales forman un modelo ARIMA no estacionario y se clasifica como un modelo "ARIMA (p, d, q) x (P,D,Q)" pero solo dispondremos de la parte regular porque nuestro modelo no tiene componente estacional, donde:
+
+- p es el número de términos autorregresivos,
+- d es el número de diferencias necesarias para la estacionariedad, y
+- q es el número de retardos que contiene el modelo de medias móviles.
+
+Como podemos observar, en las diferentes pruebas nos arrojan los mismos resultados, que el mejor modelo ARIMA es el (0,1,1):
+
+- el cero nos indica el grado del polinomio autoregresivo
+- el primer 1 indica el numero de diferencias que se han aplicado para que el modelo sea estacionario
+- el último indica el número de retardos que aplicamos a nuestro modelo.
+
+
+### ARIMA para Colgate
+
+```{r}
+#ARIMA MODEL Automatic
+
+fit1.Colgate = auto.arima(oVentasColgate) #cuando le ponemos autoarima estima el modelo ruido blanco.
+fit2.Colgate = auto.arima(oVentasColgate, lambda = 0) #con transformacion logaritmo neperiano
+fit3.Colgate = auto.arima(oVentasColgate, lambda = 0, approximation = F, stepwise = F)
+fit4.Colgate = auto.arima(oVentasColgate, ic = 'aic', trace = T)
+summary(fit1.Colgate, fit2.Colgate, fit3.Colgate, fit4.Colgate)
+```
+
+Como podemos observar, en las diferentes pruebas nos arrojan los mismos resultados, que el mejor modelo ARIMA es el (0,1,1):
+
+- el cero nos indica el grado del polinomio autoregresivo
+- el primer 1 indica el numero de diferencias que se han aplicado para que el modelo sea estacionario
+- el último indica el número de retardos que aplicamos a nuestro modelo.
+
+```{r}
+#residual analysis
+ggtsdisplay(fit1$residuals)
+ggtsdisplay(fit2$residuals)
+ggtsdisplay(fit3$residuals)
+ggtsdisplay(fit4$residuals)
+ggtsdisplay(fit1.Colgate$residuals)
+ggtsdisplay(fit2.Colgate$residuals)
+ggtsdisplay(fit3.Colgate$residuals)
+ggtsdisplay(fit4.Colgate$residuals)
+```
+
+Son practicamente iguales los 4 modelos para Colgate como para Crest.
+
+Los modelos son validos desde el punto de vista de modelizacion.
+
+```{r}
+#box-Ljung Test
+#cmo el modelo estima 1 parametros fitdf=1
+Box.test(fit1$residuals,lag=4, fitdf=1, type="Lj")
+Box.test(fit1$residuals,lag=8, fitdf=1, type="Lj")
+Box.test(fit1$residuals,lag=12, fitdf=1, type="Lj")
+
+Box.test(fit1.Colgate$residuals,lag=4, fitdf=1, type="Lj")
+Box.test(fit1.Colgate$residuals,lag=8, fitdf=1, type="Lj")
+Box.test(fit1.Colgate$residuals,lag=12, fitdf=1, type="Lj")
+
+
+```
+
+
+En todos los casos, se confirma al ser el p-value > 0.05, que los errores son ruido blanco.
+
+Este test lo que nos indica es como se distribuyen los residuos de los datos, es un contraste de hipótesis en el que la hipótesis nula indica que los residuos de los datos se distribuyen de manera independiente, por tanto, decimos que no existe autocorrelación entre los residuos y por tanto existe ruido blanco. Por tanto, buscamos un valor alto para nuestro P-valor con objetivo de aceptar la hipótesis nula, y eso nos indica que los residuos no tiene autocorrelación, gracias a esto podemos continuar con el análisis.
+
+
+
+```{r,include=TRUE,echo=FALSE, out.height='50%', out.width='50%'}
+#Forecast de Crest
+fventas.crest = forecast(fit1, h=16)
+plot(fventas.crest)
+
+
+#Forecast de Colgate
+fventas.colgate = forecast(fit1.Colgate, h = 16)
+plot(fventas.colgate)
+```
+
+
+El forecast que vemos nos indica la predicción y podemos observar que tiene una predicción correcta ya que sigue la tendencia. La prediccion aparenta ser una linea recta pero se debe a la aplicacion de un solo retardo sobre nuestro modelo.
+
+
+### Busqueda y eliminacion de Outliers
+Ahora vamos a proceder analizar los outliers tanto aditivos (afectan a la serie temporal) e innovativos (afectan al error) entonces vamos a analizar, los outliers para ambas empresas.
+
+```{r}
+#Plot boxplot
+#coredata() xts to vector
+gData.Crest=data.frame(Date=time(fit1$residuals), fit1$residuals, check.names=FALSE, row.names=NULL)
+gData.Colgate=data.frame(Date=time(fit1.Colgate$residuals), fit1.Colgate$residuals, check.names=FALSE, row.names=NULL)
+
+#Boxplot de Crest
+ggplot(gData.Crest) + geom_boxplot(aes(x = is.numeric(fit1$residuals), y = fit1$residuals),
+                             outlier.colour="red", outlier.shape=16,outlier.size=2)+
+  xlab("")+ggtitle("Boxplot de Crest")
+
+#Boxplot de Colgate
+ggplot(gData.Colgate) + geom_boxplot(aes(x = is.numeric(fit1.Colgate$residuals), y = fit1.Colgate$residuals),
+                             outlier.colour="red", outlier.shape=16,outlier.size=2)+
+  xlab("")+ggtitle("Boxplot de Colgate")
+
+```
+
+
+Con el Boxplot podemos observar la presencia de outliers en los datos de Crest como de Colgate. 
+
+
+```{r colgate_outlier,include=TRUE,echo=FALSE, out.height='70%', out.width='70%'}
+(colgate_outlier <- tso(colgate_training, types = c("TC", "AO", "LS", "IO", "SLS")))
+plot(colgate_outlier)
+summary(colgate_outlier)
+```
+
+
+
+Aca observamos los outliers en las semanas 43, 102, 136 y 196. Al mismo tiempo observamos el comportamiento de estos outliers en la serie. Podemos observar que los dos primeros son impulsos y el tercero es un escalon ya que a partir de aqui cambia el comportamiento de la serie. Este escalon se da en la semana 136 cuando la ADA anuncia que va a ayudar a Crest
+
+
+
+```{r crest_outlier,include=TRUE,echo=FALSE, out.height='70%', out.width='70%'}
+(crest_outlier <- tso(crest_training, types = c("TC", "AO", "LS", "IO", "SLS")))
+plot(crest_outlier)
+summary(crest_outlier)
+```
+
+Aca podemos observar claramente los outliers de Crest en la semana 136 (coincide con Colgate), 167 y 196. Al mismo tiempo se puede visualizar muy bien la indidencia de estos outliers
+
+
+## ARIMAX 
+
+Agregamos los outliers al modelo ARIMAX
+
+
+```{r}
+(outliers_colgate_idx <- colgate_outlier$outliers$ind)
+(outliers_crest_idx <- crest_outlier$outliers$ind)
+```
+
+
+
+```{r arimax_model_crest,include=FALSE,echo=FALSE}
+#ARIMAX Crest
+arimax_model_crest <- arimax(crest_training,
+                       order = c(0,1,1), #orden del ARIMA
+                       xtransf = data.frame(I1 = (1*(seq(crest_training) == outliers_crest_idx))),  #matriz con 1 donde haya outliers y 0 en lo demás            
+                       transfer = list(c(0,0)), #porque p=0
+                       method = 'ML')
+summary(arimax_model_crest)
+
+```
+
+
+
+
+```{r arimax_model_colgate}
+#ARIMAX Colgate
+arimax_model_colgate <- arimax(colgate_training,
+                       order = c(0,1,1), #orden del ARIMA
+                       xtransf = data.frame(I1 = (1*(seq(crest_training) == outliers_colgate_idx))),  #matriz con 1 donde haya outliers y 0 en lo demás            
+                       transfer = list(c(0,0)), #porque p=0
+                       method = 'ML')
+summary(arimax_model_crest)
+```
+
+Observamos la significancia de los coeficientes en los modelos arimax de Crest y Colgate
+```{r,include=T,echo=T}
+coeftest(arimax_model_crest)
+coeftest(arimax_model_colgate)  
+```
+Como observamos en el test de coeficientes en ambos casos la observacion 136, anteriomente mostrada por la deteccion de outliers, tiene mucha significatividad.
+
+Ahora vamos a observar los residuales con el Ljung-Box test
+
+```{r}
+checkresiduals(arimax_model_colgate)
+checkresiduals(arimax_model_crest)
+```
+
+## Funcion de transferencia
+
+```{r funcion_transferencia}
+mod.transf.colgate <- arimax(x = colgate_training,
+                             order = c(0, 1 ,1),
+                             xtransf = data.frame(crest_training), #atipico aditivo
+                             transfer = list(c(0,0)), #primero el step y luego el pulse
+                             method = "ML")
+mod.transf.colgate
+```
+
+Analizamos los coeficientes de la funcion de transferencia
+
+```{r}
+coeftest(mod.transf.colgate)
+```
+
+Observamos por ultimo los residuales
+
+```{r}
+checkresiduals(mod.transf.colgate)
+```
+
+
+Gracias a la funcion de transferencia de Colgate y Crest deducimos la relacion entre ellas.
+Como observamos, la relacion entre Colgate y Crest es negativa, por tanto concluimos que la intervención de la ADA afectó negativamente a las ventas de Colgate
+
+
+
+## **Conclusiones**
+
+En este informe hemos podido analizar la evolucion de las cuotas de mercado de dos marcas competidoras. El mercado estaba liderado por la crema dental Colgate, pero esta se vio afectada por la intenvención de la ADA al aprobar la crema dental Crest.
+
+Para poder llevar a acabo la prediccion de las 16 semanas de 1963 hemos utilizado un modelo ARIMA (0,1,1) que mejoramos tratando los puntos atípicos y que nos indica que las cuotas de mercado de las dos compañias se mantendrán estables en el tiempo.
+
+Una vez terminado nuestro informe concluimos que la subida de la cuota de mercado de Crest influyó negativamente en la de Colgate, por lo que podemos afirmar que la cuota de mercado de Colgate se vio afectada por la de crest. Con esto queremos decir que un aumento brutal en la cuota de mercado de Crest se traduce en una caida brutal dentro de la cuota de mercado de Colgate, por tanto se puede concluir que ambas empresas se influyen entre si
+
+
+
+
+
+
+
+
+
+
+

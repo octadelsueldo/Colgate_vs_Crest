@@ -1,0 +1,2 @@
+"0","# Plot de las series una abajo de la otra"
+"0","autoplot(mydata, facets = TRUE)"

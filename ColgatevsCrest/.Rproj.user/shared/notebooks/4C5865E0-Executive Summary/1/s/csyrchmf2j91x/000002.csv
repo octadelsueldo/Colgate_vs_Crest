@@ -1,0 +1,7 @@
+"0","#library(fpp2)"
+"0",""
+"0","#Plot de Colgate"
+"0","autoplot(colgate) +"
+"0","  ggtitle(""Colgate Market Shares"") +"
+"0","  xlab(""Week"") +"
+"0","  ylab(""Market Share"")"

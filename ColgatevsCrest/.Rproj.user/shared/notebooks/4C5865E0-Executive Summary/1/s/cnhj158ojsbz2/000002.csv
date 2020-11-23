@@ -1,0 +1,7 @@
+"0","#Tendremos que trabajar la columna de la fecha y las semanas"
+"0","ventasCrest <- data$Crest"
+"0","ventasColgate <- data$Colgate"
+"0","generateDate <- seq(as.Date('1958/01/08'), as.Date('1963/04/23'), by = 'week')"
+"0","xVentasCrest <- xts(ventasCrest, order.by = generateDate)"
+"0","xVentasColgate <- xts(ventasColgate, order.by = generateDate)"
+"0",""
